@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🏓 Ultimate Table Tennis</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      margin: auto;
+      background: #222;
+      border: 4px solid #ffd700;
+    }
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+    }
+    button {
+      margin: 5px;
+      padding: 8px 12px;
+      background: #e50914;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #stats {
+      margin-top: 10px;
+    }
+    #store {
+      position: absolute;
+      top: 60px;
+      left: 10px;
+      background: #333;
+      padding: 10px;
+      border-radius: 8px;
+      display: none;
+    }
+    .item {
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <button onclick="activateSkill()">⚡ Skill</button>
+    <button onclick="changeMode()">🎮 Mode</button>
+    <button onclick="toggleStore()">🛒 Store</button>
+    <div id="stats">Level: 1 | DOLs: 0 | Mode: Classic | Racket: Default</div>
+  </div>
+
+  <div id="store">
+    <h3>🛍️ Racket Store</h3>
+    <div class="item"><button onclick="buyRacket('Flame')">🔥 Flame Racket - 100 DOLs</button></div>
+    <div class="item"><button onclick="buyRacket('Ice')">❄️ Ice Racket - 150 DOLs</button></div>
+    <div class="item"><button onclick="buyRacket('Shadow')">🌑 Shadow Racket - 200 DOLs</button></div>
+  </div>
+
+  <canvas id="game" width="800" height="500"></canvas>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    let playerY = canvas.height / 2;
+    let aiY = canvas.height / 2;
+    let ball = { x: canvas.width / 2, y: canvas.height / 2, vx: 4, vy: 2 };
+    let level = 1;
+    let dols = 0;
+    let mode = "Classic";
+    let skillActive = false;
+    let racket = "Default";
+    let ownedRackets = ["Default"];
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw paddles
+      ctx.fillStyle = getRacketColor(racket);
+      ctx.fillRect(20, playerY - 40, 10, 80);
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(canvas.width - 30, aiY - 40, 10, 80);
+
+      // Draw ball
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, 10, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffd700";
+      ctx.fill();
+
+      // Move ball
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+
+      // Bounce
+      if (ball.y < 0 || ball.y > canvas.height) ball.vy *= -1;
+
+      // Player collision
+      if (ball.x < 30 && ball.y > playerY - 40 && ball.y < playerY + 40) {
+        ball.vx *= -1;
+        dols += 10;
+      }
+
+      // AI collision
+      if (ball.x > canvas.width - 40 && ball.y > aiY - 40 && ball.y < aiY + 40) {
+        ball.vx *= -1;
+      }
+
+      // AI movement
+      if (mode === "Classic") aiY += (ball.y - aiY) * 0.05;
+      else if (mode === "Hard") aiY += (ball.y - aiY) * 0.1;
+
+      // Score
+      if (ball.x < 0 || ball.x > canvas.width) {
+        ball.x = canvas.width / 2;
+        ball.y = canvas.height / 2;
+        level++;
+      }
+
+      // Skill effect
+      if (skillActive) {
+        ctx.fillStyle = "#e50914";
+        ctx.fillText("Skill Activated!", canvas.width / 2 - 50, 30);
+      }
+
+      updateStats();
+      requestAnimationFrame(draw);
+    }
+
+    function getRacketColor(name) {
+      switch (name) {
+        case "Flame": return "#ff4500";
+        case "Ice": return "#00ffff";
+        case "Shadow": return "#444";
+        default: return "#fff";
+      }
+    }
+
+    function updateStats() {
+      document.getElementById("stats").innerText =
+        `Level: ${level} | DOLs: ${dols} | Mode: ${mode} | Racket: ${racket}`;
+    }
+
+    function activateSkill() {
+      skillActive = true;
+      setTimeout(() => skillActive = false, 2000);
+    }
+
+    function changeMode() {
+      mode = mode === "Classic" ? "Hard" : "Classic";
+    }
+
+    function toggleStore() {
+      const store = document.getElementById("store");
+      store.style.display = store.style.display === "none" ? "block" : "none";
+    }
+
+    function buyRacket(name) {
+      const prices = { Flame: 100, Ice: 150, Shadow: 200 };
+      if (ownedRackets.includes(name)) {
+        racket = name;
+        alert(`🎾 ${name} racket equipped!`);
+      } else if (dols >= prices[name]) {
+        dols -= prices[name];
+        ownedRackets.push(name);
+        racket = name;
+        alert(`✅ You bought and equipped the ${name} racket!`);
+      } else {
+        alert("❌ Not enough DOLs!");
+      }
+    }
+
+    canvas.addEventListener("touchmove", e => {
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      playerY = touch.clientY - rect.top;
+    });
+
+    draw();
+  </script>
+</body>
+</html>
